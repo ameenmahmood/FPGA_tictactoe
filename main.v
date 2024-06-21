@@ -1,0 +1,88 @@
+module main(
+    input wire clk, 
+    input wire enter, 
+    input wire up_button,
+    input wire side_button, 
+    output reg [6:0] hex0,
+    output reg [6:0] hex1, 
+    output reg [8:0] gpio_ouputs
+); 
+
+
+wire [6:0] one = 7'b1111001; 
+wire [6:0] two = 7'b0100100; 
+wire [6:0] P_icon = 7'b0001100; 
+
+reg player_flag = 0; 
+reg [5:0] x_y_coordinate_flag; 
+reg reset_flag; 
+
+reg [1:0] up_button_flag = 0; 
+reg [1:0] side_button_flag = 0; 
+
+/*
+player 1,2 indication
+when key0 is pressed, player change
+key0 -> enter button */
+always @ (posedge enter) begin 
+    player_flag <= player_flag + 1; 
+end 
+
+always @ (posedge clk) begin 
+    hex1 <= P_icon; 
+    // displays which player goes 
+    case (player_flag) 
+        0: hex0 <= one; 
+        1: hex0 <= two; 
+    endcase 
+
+    /* up and side button flag to indicate 
+    what led to light up in a 3x3 grid */ 
+    case (up_button_flag)
+        0: x_y_coordinate_flag [2:0] <= 3'b001;    
+        1: x_y_coordinate_flag [2:0] <= 3'b010;  
+        2: x_y_coordinate_flag [2:0] <= 3'b100;   
+        3: x_y_coordinate_flag [2:0] <= 3'b000;  
+    endcase
+
+    case (side_button_flag) 
+        0: x_y_coordinate_flag [5:3] <= 3'b001;    
+        1: x_y_coordinate_flag [5:3] <= 3'b010;  
+        2: x_y_coordinate_flag [5:3] <= 3'b100;   
+        3: x_y_coordinate_flag [5:3] <= 3'b000; 
+    endcase  
+end  
+
+
+// turning on LEDS on 3x3 grid 
+always @ (posedge clk) begin 
+    casez (x_y_coordinate_flag) 
+        6'b???000: gpio_ouputs [8:0] <= 9'b000000000; // no leds are on
+        6'b000???: gpio_ouputs [8:0] <= 9'b000000000; 
+        6'b001001: gpio_ouputs [8:0] <= 9'b000000001; // pos1
+        6'b010001: gpio_ouputs [8:0] <= 9'b000000010; // pos2
+        6'b100001: gpio_ouputs [8:0] <= 9'b000000100; // pos3
+        6'b001010: gpio_ouputs [8:0] <= 9'b000001000; // pos4
+        6'b010010: gpio_ouputs [8:0] <= 9'b000010000; // pos5
+        6'b100010: gpio_ouputs [8:0] <= 9'b000100000; // pos6     
+        6'b001100: gpio_ouputs [8:0] <= 9'b001000000; // pos7
+        6'b010100: gpio_ouputs [8:0] <= 9'b010000000; // pos8
+        6'b100100: gpio_ouputs [8:0] <= 9'b100000000; // pos9
+    endcase 
+end 
+
+// key3 -> up button
+always @ (posedge up_button) begin
+    up_button_flag <= up_button_flag + 1; 
+    if (up_button_flag > 3) begin 
+        up_button_flag <= up_button_flag + 1;  
+    end 
+end 
+
+//key2 -> side button 
+always @ (posedge side_button) begin 
+    side_button_flag <= side_button_flag + 1; 
+end 
+
+
+endmodule 
